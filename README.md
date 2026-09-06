@@ -58,11 +58,13 @@ enough; flash both when you change anything else, or to keep them in sync.
 Vial/Keybard cannot load firmware, only edit the keymap in EEPROM, so C
 changes always go through a `.uf2` flash.
 
-If a half has a pointing device, build the matching variant:
+Both halves have a pmw3389 trackball, so that variant is the default
+(`POINTER ?= trackball/pmw3389` in the Makefile).  Other variants:
 
 ```sh
+make right POINTER=                     # plain, no pointing device
 make right POINTER=trackpoint
-make left  POINTER=trackball/pmw3389    # pmw3360 only on very early boards
+make left  POINTER=trackball/pmw3360    # only on very early boards
 ```
 
 (`azoteq` and `pimoroni` also exist.)  Flashing the wrong variant is harmless;

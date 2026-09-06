@@ -1,7 +1,8 @@
 # Thin wrapper around the qmk CLI.  The vendor tree and this overlay are
 # wired together via `qmk config` (see README.md).
 #
-#   make left right            build both halves (plain, no pointing device)
+#   make left right            build both halves (trackball pmw3389 by default)
+#   make left POINTER=            plain build, no pointing device
 #   make left POINTER=trackpoint
 #   make right POINTER=trackball/pmw3389
 #   make flash-left            build + wait for bootloader + copy (see tools/flash.sh)
@@ -9,7 +10,7 @@
 #   make import KBI=layouts-kbi/foo.kbi   regenerate keymap.c from a Keybard export
 
 KEYMAP  ?= mal
-POINTER ?=
+POINTER ?= trackball/pmw3389
 KB_LEFT  := svalboard/$(if $(POINTER),$(POINTER)/,)left
 KB_RIGHT := svalboard/$(if $(POINTER),$(POINTER)/,)right
 KBI ?= layouts-kbi/mouse_on_base.kbi
