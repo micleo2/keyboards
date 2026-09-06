@@ -1,0 +1,4 @@
+[submodule "firmware"]
+	path = firmware
+	url = https://github.com/micleo2/svalboard-vial-qmk.git
+	branch = mal

@@ -1,0 +1,9 @@
+[project]
+name = "svalboard-qmk"
+version = "0.0.0"
+description = "QMK userspace for my Svalboard; this project only pins the qmk CLI"
+requires-python = "==3.12.*"
+dependencies = ["qmk==1.2.0"]
+
+[tool.uv]
+package = false

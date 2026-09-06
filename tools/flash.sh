@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Build one half and flash it.  Usage: tools/flash.sh left|right [pointer]
+# Run via make (flash-left / flash-right) so QMK="uv run qmk" is set.
 #   pointer: "" (none), trackpoint, trackball/pmw3389, trackball/pmw3360, azoteq, pimoroni
 #
 # Flashing steps: the half to flash must be the one plugged into the computer
@@ -15,7 +16,7 @@ label=RPI-RP2
 uf2="svalboard_$(echo "$kb" | tr / _ | sed 's/^svalboard_//')_${keymap}.uf2"
 
 echo "== building $kb:$keymap"
-qmk compile -kb "$kb" -km "$keymap" -j"$(nproc)" >/tmp/qmk-flash-$half.log 2>&1 \
+${QMK:-qmk} compile -kb "$kb" -km "$keymap" -j"$(nproc)" >/tmp/qmk-flash-$half.log 2>&1 \
   || { tail -40 /tmp/qmk-flash-$half.log; echo "build failed, see /tmp/qmk-flash-$half.log"; exit 1; }
 [ -f "$uf2" ] || { echo "expected $uf2 not found"; exit 1; }
 echo "== built $uf2"

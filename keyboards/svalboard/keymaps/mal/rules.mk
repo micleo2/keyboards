@@ -13,3 +13,6 @@ SRC += keymap_support.c
 
 # Per the Svalboard docs: LTO breaks the build, leave it off.
 LTO_ENABLE = no
+
+# Raw HID link to the desktop shell (host_link.c, from creative-synced/programming/qs-qmk).
+SRC += host_link.c
