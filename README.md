@@ -15,7 +15,7 @@ svalboard/
     keymap.c                      THE LAYOUT.  Edit this.
     config.h                      tapping term and friends
     rules.mk                      features on/off, pulls in keymap_support.c and host_link.c
-    vial.json                     key geometry only, read by the desktop layout viewer
+    geometry.json                 key positions (Vial's KLE format), read by the desktop layout viewer
     host_link.c/.h -> ../../../../../qs-qmk/firmware/   raw HID link to the desktop
   tools/kbi2keymap.py             Keybard .kbi  ->  keymap.c
   tools/flash.sh                  build, wait for the RPI-RP2 drive, copy

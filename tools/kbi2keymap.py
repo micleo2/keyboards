@@ -64,14 +64,16 @@ def ident(name, fallback):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("kbi", type=Path)
-    ap.add_argument("--vial-json", type=Path,
+    ap.add_argument("--keymap-support", type=Path,
                     default=Path(__file__).resolve().parent.parent
-                    / "keyboards/svalboard/keymaps/mal/vial.json",
-                    help="vial.json whose customKeycodes list resolves USERnn")
+                    / "firmware/keyboards/svalboard/keymaps/keymap_support.h",
+                    help="header whose my_keycodes enum resolves Keybard's USERnn")
     args = ap.parse_args()
 
     kbi = json.loads(args.kbi.read_text())
-    custom = [c["name"] for c in json.loads(args.vial_json.read_text())["customKeycodes"]]
+    # USER00.. are the SV_* codes in the order of enum my_keycodes (QK_KB_0 upwards).
+    enum_src = re.search(r"enum my_keycodes \{(.*?)\};", args.keymap_support.read_text(), re.S).group(1)
+    custom = [m for m in re.findall(r"^\s*(SV_\w+)\s*(?:=\s*QK_KB_0)?\s*,", enum_src, re.M) if m != "SV_SAFE_RANGE"]
 
     assert kbi["rows"] == ROWS and kbi["cols"] == COLS, "unexpected matrix size"
     nlayers = kbi["layers"]
