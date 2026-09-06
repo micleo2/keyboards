@@ -37,6 +37,14 @@ nodes) lives in the quickshell config in `~/dotfiles`; the only contract
 between the two is the HID protocol in `users/micleo2/host_link.c` and the
 JSON files `make export` writes.
 
+**Raw HID access.**  The bridge opens each board's hidraw node, which is
+root-only by default.  `host/udev/70-<board>-bridge.rules` tags the node
+`uaccess` by USB vendor/product id, and logind then grants the active seat's
+user access.  The `70-` prefix matters: the system rule that acts on the tag is
+`73-seat-late.rules`, and udev runs rule files in name order.  Only the bridge
+needs this; building and flashing do not.  `setup.sh` installs the rules and
+reloads udev.
+
 ## Daily use
 
 ```sh
@@ -138,6 +146,8 @@ gh repo clone micleo2/keyboards ~/oss/keyboards
 ~/oss/keyboards/setup.sh      # pacman deps, submodules (shallow), uv env, qmk config, udev, export
 ```
 
+`setup.sh` is idempotent: rerun it after pulling to pick up new submodule
+pins, udev rules or Python deps (`NO_SUDO=1` skips the pacman and udev steps).
 `~/dotfiles/install/arch-hyprland.sh` does exactly that.  The qmk CLI is
 configured with `user.overlay_dir` only; the Makefile passes `QMK_HOME` per
 board (the CLI would prefer a configured `qmk_home` over the environment).
