@@ -1,0 +1,6 @@
+*.uf2
+*.hex
+*.bin
+.build/
+compile_commands.json
+__pycache__/
