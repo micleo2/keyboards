@@ -37,7 +37,7 @@ host_link.c (in the keymap) ◀──raw HID──▶ qmk-bridge.py ◀──JSO
 **Layout.** `~/creative-synced/programming/qs-qmk/keymap-export.py --board svalboard`
 reads `keyboards/svalboard/keymaps/mal/keymap.c` with `qmk c2json`, the
 layer enum and designators for names and numbers, the HSV layer colour table,
-and `vial.json`'s KLE for where every key sits. It writes
+and `geometry.json`'s KLE for where every key sits. It writes
 `retro/keymap/svalboard.json`; the shell watches the file, so the viewer
 updates in place. The board config that drives it is
 `qs-qmk/boards/svalboard.json`: layer short names and titles, legends for the
