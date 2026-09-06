@@ -5,8 +5,8 @@
 #
 # Flashing steps: the half to flash must be the one plugged into the computer
 # (its port labelled U).  Put it in bootloader mode either with the BOOT key in
-# the layout (hold the sys_ctrl layer key, right ring finger east, and press
-# left pinky west) or by double-tapping the RESET button on its underside.
+# the layout (tap the sys_ctrl layer key, right ring finger east, then press
+# left pinky centre) or by double-tapping the RESET button on its underside.
 set -euo pipefail
 half=${1:?left|right}
 pointer=${2:-}
