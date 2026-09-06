@@ -13,6 +13,7 @@
 #include QMK_KEYBOARD_H
 #include <string.h>
 #include "keymap_support.h"   // SV_* keycodes, MH_AUTO_BUTTONS_LAYER
+#include "dynamic_keymap.h"   // vial_tap_dance_entry_t, dynamic_keymap_set_tap_dance
 
 enum layer {
     BASE = 0,
@@ -38,19 +39,19 @@ enum layer {
 const uint16_t PROGMEM keymaps[DYNAMIC_KEYMAP_LAYER_COUNT][MATRIX_ROWS][MATRIX_COLS] = {
     [BASE] = LAYOUT(
         /*      Center              North               East                South               West                DoubleSouth */
-        /*R1*/  KC_J,               KC_U,               KC_QUOT,            KC_M,               KC_H,               XXXXXXX,
+        /*R1*/  KC_J,               KC_U,               QK_REPEAT_KEY,      KC_M,               KC_H,               XXXXXXX,
         /*R2*/  KC_K,               KC_I,               LSFT(KC_SCLN),      KC_COMM,            KC_Y,               XXXXXXX,
-        /*R3*/  KC_L,               KC_O,               MO(SYS_CTRL),       KC_DOT,             KC_N,               XXXXXXX,
+        /*R3*/  KC_L,               KC_O,               OSL(SYS_CTRL),      KC_DOT,             KC_N,               XXXXXXX,
         /*R4*/  KC_SCLN,            KC_P,               KC_BSLS,            KC_SLSH,            KC_RBRC,            XXXXXXX,
 
-        /*L1*/  KC_F,               KC_R,               KC_G,               KC_V,               LSFT(KC_QUOT),      XXXXXXX,
+        /*L1*/  KC_F,               KC_R,               KC_G,               KC_V,               KC_QUOT,            XXXXXXX,
         /*L2*/  KC_D,               KC_E,               KC_T,               KC_C,               KC_GRV,             XXXXXXX,
         /*L3*/  KC_S,               KC_W,               KC_B,               KC_X,               KC_DEL,             XXXXXXX,
         /*L4*/  KC_A,               KC_Q,               KC_LBRC,            KC_Z,               KC_TAB,             XXXXXXX,
 
         /*      Down                Pad                 Up                  Nail                Knuckle             DoubleDown */
         /*RT*/  KC_LSFT,            KC_SPC,             KC_ENT,             LCTL_T(KC_ESC),     KC_LALT,            XXXXXXX,
-        /*LT*/  OSL(NAV_SYMBOLS),   KC_BTN1,            KC_BTN3,            LGUI_T(KC_BSPC),    KC_BTN2,            XXXXXXX
+        /*LT*/  OSL(NAV_SYMBOLS),   KC_BTN1,            KC_BTN3,            LGUI_T(KC_BSPC),    KC_BTN2,            OSL(SYS_CTRL)
     ),
 
     [NAV_SYMBOLS] = LAYOUT(
@@ -72,15 +73,15 @@ const uint16_t PROGMEM keymaps[DYNAMIC_KEYMAP_LAYER_COUNT][MATRIX_ROWS][MATRIX_C
 
     [SYS_CTRL] = LAYOUT(
         /*      Center              North               East                South               West                DoubleSouth */
-        /*R1*/  _______,            _______,            _______,            _______,            _______,            _______,
-        /*R2*/  _______,            _______,            _______,            _______,            _______,            _______,
-        /*R3*/  _______,            _______,            _______,            _______,            _______,            _______,
-        /*R4*/  _______,            _______,            _______,            _______,            _______,            _______,
+        /*R1*/  KC_F4,              KC_F7,              _______,            KC_F1,              _______,            _______,
+        /*R2*/  KC_F5,              KC_F8,              _______,            KC_F2,              _______,            _______,
+        /*R3*/  KC_F6,              KC_F9,              _______,            KC_F3,              _______,            _______,
+        /*R4*/  KC_F10,             KC_F11,             _______,            KC_F12,             _______,            _______,
 
         /*L1*/  KC_VOLU,            KC_BRIU,            _______,            KC_MNXT,            _______,            _______,
         /*L2*/  KC_VOLD,            KC_BRID,            _______,            KC_MPRV,            _______,            _______,
         /*L3*/  KC_MUTE,            KC_PSCR,            _______,            KC_MPLY,            _______,            _______,
-        /*L4*/  _______,            _______,            _______,            _______,            QK_BOOT,            _______,   // QK_BOOT: enter flashing mode
+        /*L4*/  QK_BOOT,            SV_RIGHT_DPI_INC,   SV_LEFT_DPI_INC,    SV_RIGHT_DPI_DEC,   SV_LEFT_DPI_DEC,    _______,
 
         /*      Down                Pad                 Up                  Nail                Knuckle             DoubleDown */
         /*RT*/  _______,            _______,            _______,            _______,            _______,            _______,
@@ -146,6 +147,13 @@ static const struct layer_hsv my_layer_colors[DYNAMIC_KEYMAP_LAYER_COUNT] = {
     [15] = {213, 255, 255},
 };
 
+// Vial tap dances, used as TD(n).  {tap, hold, double tap, tap+hold, term ms}.
+// Vial keeps these in EEPROM, so they are written there whenever a new build
+// is flashed (fresh_install), the same moment the keymap itself is reloaded.
+static const vial_tap_dance_entry_t my_tap_dances[] = {
+    [0] = {QK_REPEAT_KEY, KC_LCTL, XXXXXXX, XXXXXXX, 200},
+};
+
 layer_state_t default_layer_state_set_user(layer_state_t state) {
     sval_set_active_layer(0, false);
     return state;
@@ -158,6 +166,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {
 
 void keyboard_post_init_user(void) {
     memcpy(global_saved_values.layer_colors, my_layer_colors, sizeof(my_layer_colors));
+
+    if (fresh_install) {
+        for (uint8_t i = 0; i < sizeof(my_tap_dances) / sizeof(my_tap_dances[0]); i++) {
+            dynamic_keymap_set_tap_dance(i, &my_tap_dances[i]);
+        }
+    }
 
     // Uncomment to debug the matrix over the QMK console (qmk console).
     // debug_enable = true;

@@ -57,10 +57,9 @@ the pointer just won't work until the right one is flashed.
 The half you flash must be the one plugged into the computer, via its port
 labelled `U` (not `S`).  Then either:
 
-* **From the keyboard:** hold the sys_ctrl layer key (right ring finger, east)
-  and press left pinky west.  That is `QK_BOOT` in `keymap.c`.  Only the
-  USB-connected half reboots.  (In Keybard the same key is called "Reset";
-  reach it by right-clicking a key and choosing "Enter key by code or value".)
+* **From the keyboard:** tap the sys_ctrl layer key (right ring finger, east,
+  a one-shot layer) then press left pinky centre.  That is `QK_BOOT` in
+  `keymap.c`, "Reset" in Keybard.  Only the USB-connected half reboots.
 * **Hardware:** double-tap the `RESET` button on the underside of that half.
 
 Either way an `RPI-RP2` drive appears and the script takes it from there.  A
@@ -93,10 +92,9 @@ cp ~/Downloads/whatever.kbi layouts/keybard/
 make import KBI=layouts/keybard/whatever.kbi     # overwrites keymap.c
 ```
 
-The converter handles keycodes and layer colours only, and refuses to run if
-the export contains macros, combos, tap dances or key overrides, so those are
-never silently dropped.  It also does not know about the `QK_BOOT` key, which
-was added by hand; re-add it after an import.
+The converter handles keycodes, layer colours and Vial tap dances (seeded
+into EEPROM on a fresh flash), and refuses to run if the export contains
+macros, combos or key overrides, so those are never silently dropped.
 
 ## The firmware submodule
 

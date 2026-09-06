@@ -7,9 +7,10 @@ Usage:
 The generated file is meant to be edited by hand afterwards; re-run this only
 if you want to re-import a fresh Keybard export (it overwrites everything).
 
-Only plain keycodes and layer colours are converted.  The script aborts if the
-export contains macros, combos, tap dances or key overrides, since those would
-be silently lost otherwise.
+Keycodes, layer colours and Vial tap dances are converted (tap dances are
+seeded into the board's EEPROM on a fresh flash, which is where Vial keeps
+them).  The script aborts if the export contains macros, combos or key
+overrides, since those would be silently lost otherwise.
 """
 import argparse
 import json
@@ -44,7 +45,7 @@ RENAME = {
     "KC_CAPSLOCK": "KC_CAPS", "KC_SCROLLLOCK": "KC_SCRL", "KC_NUMLOCK": "KC_NUM",
     "KC_MINUS": "KC_MINS", "KC_EQUAL": "KC_EQL", "KC_SEMICOLON": "KC_SCLN",
     "KC_APPLICATION": "KC_APP", "KC_LCTRL": "KC_LCTL", "KC_RCTRL": "KC_RCTL",
-    "KC_LALT": "KC_LALT", "KC_LGUI": "KC_LGUI",
+    "RESET": "QK_BOOT", "QK_BOOTLOADER": "QK_BOOT",
 }
 LAYER_FN = re.compile(r"\b(MO|TG|TO|TT|OSL|DF|PDF|LM|LT)\((\d+)")
 USER_KC = re.compile(r"\bUSER(\d\d)\b")
@@ -80,9 +81,6 @@ def main():
         problems.append("macros")
     if any(any(k not in ("KC_NO", 0, "") for k in c) for c in kbi.get("combos", [])):
         problems.append("combos")
-    if any(any(t[k] != "KC_NO" for k in ("tap", "hold", "doubletap", "taphold"))
-           for t in kbi.get("tapdances", [])):
-        problems.append("tap dances")
     if any(str(o).find("KC_NO") < 0 for o in kbi.get("key_overrides", [])):
         problems.append("key overrides")
     if problems:
@@ -150,6 +148,16 @@ def main():
         else:
             ranges.append([i, i])
 
+    tds = [t for t in kbi.get("tapdances", [])
+           if any(t[k] != "KC_NO" for k in ("tap", "hold", "doubletap", "taphold"))]
+    td_lines = ["    [%d] = {%s, %s, %s, %s, %d}," % (
+        t["tdid"], kc(t["tap"]), kc(t["hold"]), kc(t["doubletap"]), kc(t["taphold"]), t["tapms"])
+        for t in tds]
+    placed = {int(m) for l in kbi["keymap"] for k in l for m in re.findall(r"\bTD\((\d+)\)", k)}
+    for t in tds:
+        if t["tdid"] not in placed:
+            print("note: tap dance TD(%d) is defined but not placed on any key" % t["tdid"], file=sys.stderr)
+
     colors = kbi.get("layer_colors") or []
     color_lines = ["    [%2d] = {%3d, %3d, %3d}," % (i, c["hue"], c["sat"], c["val"])
                    for i, c in enumerate(colors)]
@@ -167,6 +175,7 @@ def main():
         enum="\n".join(enum_lines),
         layers="\n\n".join(layers_src),
         colors="\n".join(color_lines),
+        tapdances="\n".join(td_lines) if td_lines else "    // (none in the export)",
     ))
 
 
@@ -186,6 +195,7 @@ TEMPLATE = '''\
 #include QMK_KEYBOARD_H
 #include <string.h>
 #include "keymap_support.h"   // SV_* keycodes, MH_AUTO_BUTTONS_LAYER
+#include "dynamic_keymap.h"   // vial_tap_dance_entry_t, dynamic_keymap_set_tap_dance
 
 enum layer {{
 {enum}
@@ -215,6 +225,13 @@ static const struct layer_hsv my_layer_colors[DYNAMIC_KEYMAP_LAYER_COUNT] = {{
 {colors}
 }};
 
+// Vial tap dances, used as TD(n).  {{tap, hold, double tap, tap+hold, term ms}}.
+// Vial keeps these in EEPROM, so they are written there whenever a new build
+// is flashed (fresh_install), the same moment the keymap itself is reloaded.
+static const vial_tap_dance_entry_t my_tap_dances[] = {{
+{tapdances}
+}};
+
 layer_state_t default_layer_state_set_user(layer_state_t state) {{
     sval_set_active_layer(0, false);
     return state;
@@ -227,6 +244,12 @@ layer_state_t layer_state_set_user(layer_state_t state) {{
 
 void keyboard_post_init_user(void) {{
     memcpy(global_saved_values.layer_colors, my_layer_colors, sizeof(my_layer_colors));
+
+    if (fresh_install) {{
+        for (uint8_t i = 0; i < sizeof(my_tap_dances) / sizeof(my_tap_dances[0]); i++) {{
+            dynamic_keymap_set_tap_dance(i, &my_tap_dances[i]);
+        }}
+    }}
 
     // Uncomment to debug the matrix over the QMK console (qmk console).
     // debug_enable = true;
