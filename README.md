@@ -27,10 +27,36 @@ The qmk CLI is wired up via `~/.config/qmk/qmk.ini`
 ## Daily use
 
 ```sh
-make left right          # build both halves -> svalboard_{left,right}_mal.uf2 here
-make flash-left          # half in bootloader first (double-tap reset, RPI-RP2 drive)
+make flash-left          # build, wait for the left half in bootloader, copy the .uf2
 make flash-right
+make flash               # both, one after the other
+make left right          # build only -> svalboard_{left,right}_mal.uf2 here
 ```
+
+`make flash-*` builds first, then waits for the `RPI-RP2` drive, mounts it
+with udisks (no desktop automount needed), copies the firmware, and unmounts.
+
+### Getting a half into flashing mode
+
+The half you flash must be the one plugged into the computer, via its port
+labelled `U` (not `S`).  Then either:
+
+* **From the keyboard:** hold the sys_ctrl layer key (right ring finger, east)
+  and press left pinky west.  That is `QK_BOOT` in `keymap.c`.  Only the
+  USB-connected half reboots.
+* **Hardware:** double-tap the `RESET` button on the underside of that half.
+
+Either way an `RPI-RP2` drive appears and the script takes it from there.  A
+half stuck in bootloader mode (drive showing, nothing copied) gets out by
+being flashed or by unplugging it.
+
+Keymap-only changes take effect on the half that is USB master, because the
+master looks up keycodes for both halves and pushes LED state to the other
+side.  So for a quick iteration, flashing just the half you keep plugged in is
+enough; flash both when you change anything else, or to keep them in sync.
+
+Vial/Keybard cannot load firmware, only edit the keymap in EEPROM, so C
+changes always go through a `.uf2` flash.
 
 If a half has a pointing device, build the matching variant:
 

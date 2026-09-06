@@ -80,7 +80,7 @@ const uint16_t PROGMEM keymaps[DYNAMIC_KEYMAP_LAYER_COUNT][MATRIX_ROWS][MATRIX_C
         /*L1*/  KC_VOLU,            KC_BRIU,            _______,            KC_MNXT,            _______,            _______,
         /*L2*/  KC_VOLD,            KC_BRID,            _______,            KC_MPRV,            _______,            _______,
         /*L3*/  KC_MUTE,            KC_PSCR,            _______,            KC_MPLY,            _______,            _______,
-        /*L4*/  _______,            _______,            _______,            _______,            _______,            _______,
+        /*L4*/  _______,            _______,            _______,            _______,            QK_BOOT,            _______,   // QK_BOOT: enter flashing mode
 
         /*      Down                Pad                 Up                  Nail                Knuckle             DoubleDown */
         /*RT*/  _______,            _______,            _______,            _______,            _______,            _______,
