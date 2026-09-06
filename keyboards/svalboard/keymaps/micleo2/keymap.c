@@ -6,9 +6,9 @@
 // index, R4 is right pinky, L1 is left index, and so on.  Thumb clusters are
 // RT (right thumb) and LT (left thumb).
 //
-// Build:  make left  /  make right      (from the repo root)
-// Flash:  double-tap reset, then copy the .uf2 onto the RPI-RP2 drive, or
-//         run  make flash-left / make flash-right  with the half in bootloader.
+// Build:  make svalboard-left / svalboard-right        (from the repo root)
+// Flash:  make flash-svalboard-left / flash-svalboard-right, then put that
+//         half in bootloader (sys_ctrl + left pinky centre, or double-tap RESET).
 
 #include QMK_KEYBOARD_H
 #include <string.h>

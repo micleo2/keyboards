@@ -66,7 +66,7 @@ def main():
     ap.add_argument("kbi", type=Path)
     ap.add_argument("--keymap-support", type=Path,
                     default=Path(__file__).resolve().parent.parent
-                    / "firmware/keyboards/svalboard/keymaps/keymap_support.h",
+                    / "firmware/svalboard/keyboards/svalboard/keymaps/keymap_support.h",
                     help="header whose my_keycodes enum resolves Keybard's USERnn")
     args = ap.parse_args()
 

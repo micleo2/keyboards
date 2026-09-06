@@ -1,0 +1,22 @@
+{
+  "name": "lulu",
+  "title": "Lulu",
+  "qmk_home": "firmware/qmk",
+  "keyboard": "boardsource/lulu/rp2040",
+  "keymap": "micleo2",
+  "geometry": "info",
+  "usb": {
+    "vid": "0x4273",
+    "pid": "0x7685"
+  },
+  "layers": {},
+  "legends": {
+    "KC_DELWORD": "DELW",
+    "KC_HMEDIR": "~/",
+    "KC_CURDIR": "./",
+    "KC_UPDIR": "../",
+    "KC_THE": "the",
+    "KC_WITH": "with"
+  },
+  "overlay": "."
+}

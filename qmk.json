@@ -1,7 +1,9 @@
 {
     "userspace_version": "1.0",
     "build_targets": [
-        ["svalboard/trackball/pmw3389/left", "mal"],
-        ["svalboard/trackball/pmw3389/right", "mal"]
+        ["svalboard/trackball/pmw3389/left", "micleo2"],
+        ["svalboard/trackball/pmw3389/right", "micleo2"],
+        ["boardsource/unicorne", "micleo2"],
+        ["boardsource/lulu/rp2040", "micleo2"]
     ]
 }

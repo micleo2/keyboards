@@ -1,134 +1,130 @@
-# Svalboard
+# keyboards
 
-My Svalboard layout as plain QMK C, plus the tooling to build and flash it.
-This repo is a QMK *userspace overlay*: it holds only my keymap, and the
-vendor firmware tree is the `firmware/` submodule.  No VIA, no Vial: the
-keymap is compiled in, nothing is read from EEPROM, and Keybard/Vial cannot
-talk to the board any more.
+My QMK keymaps, as a QMK *userspace overlay*: this repo holds only my keymaps,
+shared code and tooling, and builds against pristine firmware trees checked
+out as submodules.  Plain QMK everywhere, no VIA/Vial.
+
+| board | keymap | firmware tree | build | flash |
+|---|---|---|---|---|
+| Svalboard (both halves pmw3389 trackballs) | `keyboards/svalboard/keymaps/micleo2/` | `firmware/svalboard` (fork of svalboard/vial-qmk, branch `mal`) | `make svalboard-left svalboard-right` | `make flash-svalboard-left` / `-right` |
+| Boardsource unicorne | `keyboards/boardsource/unicorne/keymaps/micleo2/` | `firmware/qmk` (fork `micleo2/rover` of qmk_firmware) | `make unicorne` | `make flash-unicorne` |
+| Boardsource lulu (rp2040) | `keyboards/boardsource/lulu/keymaps/micleo2/` | `firmware/qmk` | `make lulu` | `make flash-lulu` |
 
 ```
-svalboard/
-  Makefile                        make flash-left / flash-right / left / right / import / update
-  qmk.json                        overlay marker + default build targets
-  pyproject.toml, uv.lock         pins the qmk CLI (Python 3.12) for `uv run qmk`
-  keyboards/svalboard/keymaps/mal/
-    keymap.c                      THE LAYOUT.  Edit this.
-    config.h                      tapping term and friends
-    rules.mk                      features on/off, pulls in keymap_support.c and host_link.c
-    geometry.json                 key positions (Vial's KLE format), read by the desktop layout viewer
-    host_link.c/.h -> ../../../../../qs-qmk/firmware/   raw HID link to the desktop
-  tools/kbi2keymap.py             Keybard .kbi  ->  keymap.c
-  tools/flash.sh                  build, wait for the RPI-RP2 drive, copy
-  layouts/keybard/*.kbi           archived Keybard exports
-  layouts/vial/*.vil              archived Vial exports
-  firmware/                       submodule: micleo2/svalboard-vial-qmk, branch mal
-  QUICKSHELL.md                   how the board talks to the quickshell desktop
+Makefile                build / flash / export / import / update-* / setup
+setup.sh                fresh machine (toolchain, submodules, uv env, qmk config, udev, export)
+qmk.json                overlay marker + default build targets
+pyproject.toml uv.lock  pins the qmk CLI (Python 3.12); everything runs it as `uv run qmk`
+keyboards/<board>/keymaps/micleo2/   one keymap per board (keymap.c, config.h, rules.mk)
+users/micleo2/          shared by every board (QMK auto-includes users/<keymap name>/):
+  host_link.c/.h          raw HID link to the desktop shell (protocol documented at the top)
+  gw_oled.h               Game & Watch OLED art used by the boardsource keymaps
+  rules.mk                RAW_ENABLE + host_link.c
+desktop/                the desktop side's inputs
+  keymap-export.py        keymap.c -> $XDG_STATE_HOME/quickshell/retro/keymap/<board>.json (viewer data)
+  boards/<board>.json     per-board export config: firmware tree, keyboard, geometry, USB ids, legends
+  udev/70-qmk.rules       hidraw access for the boards (installed by setup.sh)
+docs/desktop-link.md    how the boards talk to the quickshell desktop
+tools/kbi2keymap.py     Keybard .kbi export -> Svalboard keymap.c
+tools/flash.sh          build, wait for the RPI-RP2 drive, copy the .uf2
+layouts/keybard/        archived Keybard exports
+firmware/svalboard      submodule
+firmware/qmk            submodule
 ```
 
-The qmk CLI is wired up via `~/.config/qmk/qmk.ini` (`user.qmk_home`,
-`user.overlay_dir`, `user.keyboard`, `user.keymap`).  It runs from the uv
-environment, so use `make`, or `uv run qmk ...` from this directory; the
-system `qmk` on Python 3.14 cannot drive this firmware tree.
+The desktop half (bar chip, layout viewer, the bridge that owns the hidraw
+nodes) lives in the quickshell config in `~/dotfiles`; the only contract
+between the two is the HID protocol in `users/micleo2/host_link.c` and the
+JSON files `make export` writes.
 
 ## Daily use
 
 ```sh
-make flash-left          # build, wait for the left half in bootloader, copy the .uf2
-make flash-right
-make flash               # both, one after the other
-make left right          # build only -> svalboard_trackball_pmw3389_{left,right}_mal.uf2 here
+make flash-svalboard-right     # build, wait for the half in bootloader, copy the .uf2
+make flash-unicorne            # same for the unicorne (make flash-lulu for the lulu)
+make export                    # refresh what the desktop viewer draws
+make                           # build every board -> *.uf2 here
 ```
 
-`make flash-*` builds first, then waits for the `RPI-RP2` drive, mounts it
+`tools/flash.sh` builds first, then waits for the `RPI-RP2` drive, mounts it
 with udisks (no desktop automount needed), copies the firmware, and unmounts.
 
-Both halves have a pmw3389 trackball, so that variant is the default
-(`POINTER ?= trackball/pmw3389` in the Makefile).  Other variants:
+**Bootloader mode.**  Svalboard: the half to flash must be the one plugged
+in, through its port labelled `U`.  Tap the sys_ctrl layer key (right ring
+finger, east, a one-shot layer) then press left pinky centre (`QK_BOOT`), or
+double-tap the `RESET` button on its underside.  Unicorne / lulu: `QK_BOOT`
+in the layout, or the button on the controller.  A board stuck in bootloader
+mode (drive showing, nothing copied) gets out by being flashed or unplugged.
 
-```sh
-make right POINTER=                     # plain, no pointing device
-make right POINTER=trackpoint
-make left  POINTER=trackball/pmw3360    # only on very early boards
-```
+Svalboard keymap-only changes take effect on the half that is USB master (it
+looks up keycodes for both halves and pushes LED state to the other side), so
+one flash is enough for a quick iteration; flash both when `config.h`,
+`rules.mk` or `firmware/svalboard` change.  Trackball DPI and scroll settings
+live in the Svalboard's own EEPROM block and survive flashes; layer colours
+come from `keymap.c` at every boot.
 
-(`azoteq` and `pimoroni` also exist.)  Flashing the wrong variant is harmless;
-the pointer just won't work until the right one is flashed.
+Svalboard pointing-device variants, if a half ever changes:
+`make svalboard-right POINTER=` (none), `POINTER=trackpoint`,
+`POINTER=trackball/pmw3360` (very early boards), `azoteq`, `pimoroni`.
 
-### Getting a half into flashing mode
+## Writing a keymap
 
-The half you flash must be the one plugged into the computer, via its port
-labelled `U` (not `S`).  Then either:
+Everything is standard QMK, so the [QMK docs](https://docs.qmk.fm) apply:
 
-* **From the keyboard:** tap the sys_ctrl layer key (right ring finger, east,
-  a one-shot layer) then press left pinky centre.  That is `QK_BOOT` in
-  `keymap.c`.  Only the USB-connected half reboots.
-* **Hardware:** double-tap the `RESET` button on the underside of that half.
-
-Either way an `RPI-RP2` drive appears and the script takes it from there.  A
-half stuck in bootloader mode (drive showing, nothing copied) gets out by
-being flashed or by unplugging it.
-
-Keymap-only changes take effect on the half that is USB master, because the
-master looks up keycodes for both halves and pushes LED state to the other
-side.  So for a quick iteration, flashing just the half you keep plugged in is
-enough; flash both when you change `config.h`/`rules.mk` or update `firmware/`.
-
-## Writing the keymap
-
-Everything is standard QMK, so the [QMK docs](https://docs.qmk.fm) apply
-directly:
-
-* Layers are `LAYOUT(...)` blocks in `keymaps[]`; unused layer slots are
-  filled with `LAYER_TRNS`.  Add a name to `enum layer` and shrink the
-  `[3 ... 13]` range when you add one.
+* Layers are `LAYOUT(...)` blocks in `keymaps[]`.  The Svalboard file fills
+  unused layer slots with `LAYER_TRNS`; shrink the `[3 ... 13]` range when
+  adding a layer.
 * [Tap dances](https://docs.qmk.fm/features/tap_dance): `enum` +
-  `tap_dance_actions[]`, placed as `TD(name)`.  `keymap.c` carries the docs'
-  tap-hold helper (`ACTION_TAP_DANCE_TAP_HOLD`) for "any keycode on tap,
-  another on hold".
-* Custom keycodes: start your enum at `SV_SAFE_RANGE`, not `SAFE_RANGE`, so
-  they don't collide with the Svalboard's `SV_*` codes, and handle them in
-  `process_record_user`.
-* Combos, key overrides and the like: turn the feature on in `rules.mk` and
-  define the table in `keymap.c`.
-* Svalboard specifics (DPI keys, scroll toggles, auto mouse layer, `SV_*`):
-  `firmware/keyboards/svalboard/keymaps/keymap_support.c` and
-  `firmware/keyboards/svalboard/docs/custom_firmware.md`.  Trackball scroll
-  and DPI settings still live in the Svalboard's own EEPROM block and survive
-  flashes; layer colours come from `keymap.c` at every boot.
+  `tap_dance_actions[]`, placed as `TD(name)`.  The Svalboard keymap carries
+  the docs' tap-hold helper (`ACTION_TAP_DANCE_TAP_HOLD`).
+* Custom keycodes on the Svalboard start at `SV_SAFE_RANGE`, not
+  `SAFE_RANGE`, so they don't collide with its `SV_*` codes (DPI, scroll,
+  sniper, ...), which come from
+  `firmware/svalboard/keyboards/svalboard/keymaps/keymap_support.c`; see
+  `firmware/svalboard/keyboards/svalboard/docs/custom_firmware.md`.
+* Code every board should get goes in `users/micleo2/`.
 
-## Re-importing from Keybard
+### Importing a Keybard export (Svalboard)
 
 ```sh
 cp ~/Downloads/whatever.kbi layouts/keybard/
 make import KBI=layouts/keybard/whatever.kbi     # overwrites keymap.c
 ```
 
-The converter handles keycodes, layer colours and tap dances (emitted as
-standard QMK `tap_dance_actions`), and refuses to run if the export contains
-macros, combos or key overrides, so those are never silently dropped.
+Keycodes, layer colours and tap dances (as `tap_dance_actions`) are
+converted; the script refuses exports with macros, combos or key overrides
+rather than dropping them.  Keybard cannot talk to the board any more (no
+Vial), so this is a one-way import.  `geometry.json` next to the keymap is
+Keybard's key layout in Vial's KLE format, kept only for the viewer.
 
-## The firmware submodule
+## Firmware trees
 
-`firmware/` is my fork of [svalboard/vial-qmk](https://github.com/svalboard/vial-qmk)
-on branch `mal`: upstream's `vial` branch plus two small patches to
-`svalboard.c`: the board's init/split-sync code runs without Vial, and a
-`raw_hid_receive_user()` hook for Vial builds.
-Remotes inside it: `origin` = the fork, `upstream` = Svalboard.
+Both are forks so they can carry patches; inside each, `origin` is the fork
+and `upstream` the original.
 
-```sh
-make update        # fetch upstream, rebase mal on upstream/vial, sync submodules
-git -C firmware push --force-with-lease origin mal
-git add firmware && git commit -m "firmware: rebase on upstream"
-```
-
-Fresh clone of this repo:
+* `firmware/svalboard`: [svalboard/vial-qmk](https://github.com/svalboard/vial-qmk)
+  `vial` + two small patches to `svalboard.c` (the board's init/split-sync
+  code runs without Vial; a `raw_hid_receive_user` hook for Vial builds).
+* `firmware/qmk`: [qmk/qmk_firmware](https://github.com/qmk/qmk_firmware)
+  `master` + keyboard-level tweaks for the boardsource boards
+  (`keyboards/boardsource/{unicorne,lulu}/config.h|rules.mk|info.json`).
 
 ```sh
-git clone --recurse-submodules --shallow-submodules <this repo>
-uv run qmk config user.qmk_home=$PWD/firmware user.overlay_dir=$PWD \
-    user.keyboard=svalboard/trackball/pmw3389/left user.keymap=mal
-make left
+make update-svalboard          # fetch upstream, rebase mal, sync submodules
+git -C firmware/svalboard push --force-with-lease origin mal
+git add firmware/svalboard && git commit -m "firmware/svalboard: rebase on upstream"
 ```
 
-Svalboard's own docs on custom firmware:
-`firmware/keyboards/svalboard/docs/custom_firmware.md`.
+(`make update-qmk` likewise for `firmware/qmk`.)
+
+## Fresh machine
+
+```sh
+gh repo clone micleo2/keyboards ~/oss/keyboards
+~/oss/keyboards/setup.sh      # pacman deps, submodules (shallow), uv env, qmk config, udev, export
+```
+
+`~/dotfiles/install/arch-hyprland.sh` does exactly that.  The qmk CLI is
+configured with `user.overlay_dir` only; the Makefile passes `QMK_HOME` per
+board (the CLI would prefer a configured `qmk_home` over the environment).
+For ad hoc CLI use: `QMK_HOME=$PWD/firmware/qmk uv run qmk info -kb boardsource/unicorne`.

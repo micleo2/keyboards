@@ -1,0 +1,65 @@
+{
+  "name": "svalboard",
+  "title": "Svalboard",
+  "qmk_home": "firmware/svalboard",
+  "overlay": ".",
+  "keyboard": "svalboard/trackball/pmw3389/left",
+  "keymap": "micleo2",
+  "layout": "LAYOUT",
+  "geometry": "kle",
+  "usb": {
+    "vid": "0x303A",
+    "pid": "0x4044"
+  },
+  "defines": {
+    "MH_AUTO_BUTTONS_LAYER": 15,
+    "DYNAMIC_KEYMAP_LAYER_COUNT": 16
+  },
+  "layers": {
+    "BASE": [
+      "BASE",
+      "Base"
+    ],
+    "NAV_SYMBOLS": [
+      "NAV",
+      "Nav / Symbols"
+    ],
+    "SYS_CTRL": [
+      "SYS",
+      "Sysctrl"
+    ],
+    "BOARD_CONFIG": [
+      "CFG",
+      "Board config"
+    ],
+    "MOUSE": [
+      "MOUS",
+      "Mouse"
+    ]
+  },
+  "legends": {
+    "SV_LEFT_DPI_INC": "LDP+",
+    "SV_LEFT_DPI_DEC": "LDP-",
+    "SV_RIGHT_DPI_INC": "RDP+",
+    "SV_RIGHT_DPI_DEC": "RDP-",
+    "SV_LEFT_SCROLL_TOGGLE": "LSCR",
+    "SV_RIGHT_SCROLL_TOGGLE": "RSCR",
+    "SV_RECALIBRATE_POINTER": "DRFT",
+    "SV_MH_CHANGE_TIMEOUTS": "MTMR",
+    "SV_CAPS_WORD": "CAPW",
+    "SV_AXIS_SCROLL_LOCK": "AXLK",
+    "SV_SNIPER_2": "SNP2",
+    "SV_SNIPER_3": "SNP3",
+    "SV_SNIPER_5": "SNP5",
+    "SV_SCROLL_HOLD": "SCRH",
+    "SV_SCROLL_TOGGLE": "SCRT",
+    "SV_OUTPUT_STATUS": "STAT",
+    "SV_TOGGLE_AUTOMOUSE": "AMSE",
+    "SV_TURBO_SCAN": "TRBO",
+    "KC_BTN1": "LMB",
+    "KC_BTN2": "RMB",
+    "KC_BTN3": "MMB",
+    "RGB_VAI": "BRI+",
+    "RGB_VAD": "BRI-"
+  }
+}
