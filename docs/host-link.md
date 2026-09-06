@@ -33,13 +33,13 @@ keymap.c ──make export──▶ $XDG_STATE_HOME/quickshell/retro/keymap/<boa
 users/micleo2/host_link.c ◀──raw HID──▶ retro/services/qmk/qmk-bridge.py ◀──JSON lines──▶ retro/services/Qmk.qml
 ```
 
-**Layout.** `desktop/keymap-export.py` (`make export`) reads each board's
+**Layout.** `host/keymap-export.py` (`make export`) reads each board's
 `keymap.c` with `qmk c2json`, the layer enum and designators for names and
 numbers, the layer colour table, and the key geometry (qmk `info` for the
 boardsource boards, the keymap's `geometry.json` KLE for the Svalboard).  It
 writes one JSON per board plus `index.json` into the shell's state dir
 (`Settings.stateDir + "/keymap"`); the shell watches the files, so the viewer
-updates in place.  `desktop/boards/<board>.json` drives it: firmware tree,
+updates in place.  `host/boards/<board>.json` drives it: firmware tree,
 keyboard, geometry source, USB ids, layer short names and titles, legends for
 custom keycodes.  Layers that are transparent everywhere and keys that do
 nothing on any layer are left out.
@@ -56,7 +56,7 @@ once a moment after the last change.  Packets are 32 bytes, command ids in
 the comment at the top of `host_link.c`.
 
 **Host.** `qmk-bridge.py` finds the boards by USB id (its `BOARDS` table
-matches `desktop/boards/*.json` and `desktop/udev/70-qmk.rules`) on their raw
+matches `host/boards/*.json` and `host/udev/70-qmk.rules`) on their raw
 HID interface, keeps the HELLO going, and turns packets into JSON lines for
 `Qmk.qml`, which mirrors whichever board was typed on last.  Access to the
 hidraw nodes comes from the udev rule, installed by `setup.sh`.

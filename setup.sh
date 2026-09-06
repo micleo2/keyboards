@@ -20,7 +20,7 @@ uv run qmk config user.overlay_dir="$PWD" \
 
 if [ -z "${NO_SUDO:-}" ]; then
   # let the logged-in user open the boards' raw HID nodes (quickshell's qmk-bridge.py)
-  sudo install -m 644 desktop/udev/70-qmk.rules /etc/udev/rules.d/
+  sudo install -m 644 host/udev/70-qmk.rules /etc/udev/rules.d/
   sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=hidraw
 fi
 

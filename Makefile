@@ -53,7 +53,7 @@ flash-lulu:
 	QMK_HOME=$(QMK_FW) tools/flash.sh $(LULU)
 
 export:
-	desktop/keymap-export.py
+	host/keymap-export.py
 
 import:
 	python3 tools/kbi2keymap.py $(KBI) > keyboards/svalboard/keymaps/$(KEYMAP)/keymap.c
