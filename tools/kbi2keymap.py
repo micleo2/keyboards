@@ -7,10 +7,11 @@ Usage:
 The generated file is meant to be edited by hand afterwards; re-run this only
 if you want to re-import a fresh Keybard export (it overwrites everything).
 
-Keycodes, layer colours and Vial tap dances are converted (tap dances are
-seeded into the board's EEPROM on a fresh flash, which is where Vial keeps
-them).  The script aborts if the export contains macros, combos or key
-overrides, since those would be silently lost otherwise.
+Keycodes, layer colours and tap dances are converted.  Tap dances become
+plain QMK tap_dance_actions[] entries (https://docs.qmk.fm/features/tap_dance):
+tap/double-tap ones as ACTION_TAP_DANCE_DOUBLE, tap/hold ones as the docs'
+tap-hold pattern.  The script aborts if the export contains macros, combos
+or key overrides, since those would be silently lost otherwise.
 """
 import argparse
 import json
@@ -106,9 +107,10 @@ def main():
         code = USER_KC.sub(lambda m: custom[int(m.group(1))], code)
         code = LAYER_FN.sub(lambda m: "%s(%s" % (m.group(1), layer_name.get(int(m.group(2)), m.group(2))), code)
         return code
+    _kc_plain = kc
 
     def row(flat, r, cols):
-        return [kc(flat[r * COLS + c]) for c in cols]
+        return [td_ref(kc(flat[r * COLS + c])) for c in cols]
 
     def fmt_layer(flat):
         w = max(20, max(len(kc(c)) for c in flat) + 3)
@@ -150,13 +152,28 @@ def main():
 
     tds = [t for t in kbi.get("tapdances", [])
            if any(t[k] != "KC_NO" for k in ("tap", "hold", "doubletap", "taphold"))]
-    td_lines = ["    [%d] = {%s, %s, %s, %s, %d}," % (
-        t["tdid"], kc(t["tap"]), kc(t["hold"]), kc(t["doubletap"]), kc(t["taphold"]), t["tapms"])
-        for t in tds]
-    placed = {int(m) for l in kbi["keymap"] for k in l for m in re.findall(r"\bTD\((\d+)\)", k)}
+    def short(code):
+        return re.sub(r"^(KC|QK)_", "", code).replace("(", "_").replace(")", "")
+
+    td_names, td_enum, td_actions, td_cases = {}, [], [], []
     for t in tds:
-        if t["tdid"] not in placed:
-            print("note: tap dance TD(%d) is defined but not placed on any key" % t["tdid"], file=sys.stderr)
+        tap, hold, dtap, thold = (kc(t[k]) for k in ("tap", "hold", "doubletap", "taphold"))
+        note = "Keybard TD(%d): tap %s, hold %s, double-tap %s, tap+hold %s" % (t["tdid"], tap, hold, dtap, thold)
+        if hold == "XXXXXXX" and thold == "XXXXXXX":
+            name = "TD_%s_%s" % (short(tap), short(dtap if dtap != "XXXXXXX" else tap))
+            action = "ACTION_TAP_DANCE_DOUBLE(%s, %s)" % (tap, dtap if dtap != "XXXXXXX" else tap)
+        else:
+            name = "TD_%s_%s" % (short(tap), short(hold if hold != "XXXXXXX" else thold))
+            action = "ACTION_TAP_DANCE_TAP_HOLD(%s, %s)" % (tap, hold if hold != "XXXXXXX" else thold)
+            td_cases.append("        case TD(%s):" % name)
+            if dtap != "XXXXXXX" or (hold != "XXXXXXX" and thold != "XXXXXXX"):
+                note += "  (double-tap/tap+hold not carried over; see the docs' Example 4)"
+        td_names[t["tdid"]] = name
+        td_enum.append("    %s,   // %s" % (name, note))
+        td_actions.append("    [%s] = %s," % (name, action))
+    # TD(n) in the keymap -> TD(name)
+    def td_ref(code):
+        return re.sub(r"\bTD\((\d+)\)", lambda m: "TD(%s)" % td_names.get(int(m.group(1)), m.group(1)), code)
 
     colors = kbi.get("layer_colors") or []
     color_lines = ["    [%2d] = {%3d, %3d, %3d}," % (i, c["hue"], c["sat"], c["val"])
@@ -175,7 +192,9 @@ def main():
         enum="\n".join(enum_lines),
         layers="\n\n".join(layers_src),
         colors="\n".join(color_lines),
-        tapdances="\n".join(td_lines) if td_lines else "    // (none in the export)",
+        td_enum="\n".join(td_enum) if td_enum else "    // TD_EXAMPLE,",
+        td_actions="\n".join(td_actions) if td_actions else "    // [TD_EXAMPLE] = ACTION_TAP_DANCE_DOUBLE(KC_ESC, KC_CAPS),",
+        td_cases="\n".join(td_cases) if td_cases else "        // case TD(TD_EXAMPLE):",
     ))
 
 
@@ -195,7 +214,6 @@ TEMPLATE = '''\
 #include QMK_KEYBOARD_H
 #include <string.h>
 #include "keymap_support.h"   // SV_* keycodes, MH_AUTO_BUTTONS_LAYER
-#include "dynamic_keymap.h"   // vial_tap_dance_entry_t, dynamic_keymap_set_tap_dance
 
 enum layer {{
 {enum}
@@ -218,18 +236,75 @@ const uint16_t PROGMEM keymaps[DYNAMIC_KEYMAP_LAYER_COUNT][MATRIX_ROWS][MATRIX_C
 {layers}
 }};
 
-// Per-layer LED colours (hue, sat, val), applied at every boot so the C file
-// stays the single source of truth.  Brightness (val) is still controlled by
-// the RGB_VAI/RGB_VAD keys at runtime.
+// Per-layer LED colours (hue, sat, val), applied at every boot.  Brightness
+// (val) is still controlled by the RGB_VAI/RGB_VAD keys at runtime.
 static const struct layer_hsv my_layer_colors[DYNAMIC_KEYMAP_LAYER_COUNT] = {{
 {colors}
 }};
 
-// Vial tap dances, used as TD(n).  {{tap, hold, double tap, tap+hold, term ms}}.
-// Vial keeps these in EEPROM, so they are written there whenever a new build
-// is flashed (fresh_install), the same moment the keymap itself is reloaded.
-static const vial_tap_dance_entry_t my_tap_dances[] = {{
-{tapdances}
+// ---------------------------------------------------------------------------
+// Tap dances: https://docs.qmk.fm/features/tap_dance
+// Use them in the keymap as TD(name).
+
+// Tap-hold tap dance ("advanced mod-tap": any keycode on tap, another on
+// hold), the pattern from Example 5 of the tap dance docs.
+typedef struct {{
+    uint16_t tap;
+    uint16_t hold;
+    uint16_t held;
+}} tap_dance_tap_hold_t;
+
+#define ACTION_TAP_DANCE_TAP_HOLD(tap, hold) \
+    {{ .fn = {{NULL, tap_dance_tap_hold_finished, tap_dance_tap_hold_reset}}, .user_data = (void *)&((tap_dance_tap_hold_t){{tap, hold, 0}}), }}
+
+static keypos_t td_last_pos;   // where the tap dance key is, for the Repeat key
+
+// register/unregister that also works for the Repeat key, which is not a
+// basic keycode and has to go through QMK's repeat key API.
+static void td_key(uint16_t keycode, bool down) {{
+    if (keycode == QK_REPEAT_KEY) {{
+        keyevent_t event = MAKE_KEYEVENT(td_last_pos.row, td_last_pos.col, down);
+        repeat_key_invoke(&event);
+    }} else if (down) {{
+        register_code16(keycode);
+    }} else {{
+        unregister_code16(keycode);
+    }}
+}}
+
+void tap_dance_tap_hold_finished(tap_dance_state_t *state, void *user_data) {{
+    tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)user_data;
+    if (state->pressed) {{
+        if (state->count == 1
+#ifndef PERMISSIVE_HOLD
+            && !state->interrupted
+#endif
+        ) {{
+            td_key(tap_hold->hold, true);
+            tap_hold->held = tap_hold->hold;
+        }} else {{
+            td_key(tap_hold->tap, true);
+            tap_hold->held = tap_hold->tap;
+        }}
+    }}
+}}
+
+void tap_dance_tap_hold_reset(tap_dance_state_t *state, void *user_data) {{
+    tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)user_data;
+    if (tap_hold->held) {{
+        td_key(tap_hold->held, false);
+        tap_hold->held = 0;
+    }}
+}}
+
+// Tap Dance declarations
+enum {{
+{td_enum}
+}};
+
+// Tap Dance definitions
+tap_dance_action_t tap_dance_actions[] = {{
+{td_actions}
 }};
 
 layer_state_t default_layer_state_set_user(layer_state_t state) {{
@@ -242,14 +317,29 @@ layer_state_t layer_state_set_user(layer_state_t state) {{
     return state;
 }}
 
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {{
+    // Tap-hold tap dances: send the tap keycode on release when the key was
+    // tapped and released before the dance finished (Example 5 in the docs).
+    tap_dance_action_t *action;
+    switch (keycode) {{
+{td_cases}
+            td_last_pos = record->event.key;
+            action = &tap_dance_actions[QK_TAP_DANCE_GET_INDEX(keycode)];
+            if (!record->event.pressed && action->state.count && !action->state.finished) {{
+                tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)action->user_data;
+                td_key(tap_hold->tap, true);
+                td_key(tap_hold->tap, false);
+            }}
+            break;
+    }}
+
+    // Custom keycodes go here.  Define your own starting from SV_SAFE_RANGE,
+    // not SAFE_RANGE, so they don't collide with the Svalboard's.
+    return true;
+}}
+
 void keyboard_post_init_user(void) {{
     memcpy(global_saved_values.layer_colors, my_layer_colors, sizeof(my_layer_colors));
-
-    if (fresh_install) {{
-        for (uint8_t i = 0; i < sizeof(my_tap_dances) / sizeof(my_tap_dances[0]); i++) {{
-            dynamic_keymap_set_tap_dance(i, &my_tap_dances[i]);
-        }}
-    }}
 
     // Uncomment to debug the matrix over the QMK console (qmk console).
     // debug_enable = true;

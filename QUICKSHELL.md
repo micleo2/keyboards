@@ -46,11 +46,11 @@ everywhere (3 to 13) and keys that do nothing on any layer (the double-south
 positions) are left out.
 
 **Link.** `host_link.c` is symlinked into the keymap from
-`qs-qmk/firmware/` and built by `SRC += host_link.c` in the keymap's
-rules.mk. Vial owns raw HID on this board, so the file hooks in as
-`raw_hid_receive_user`, which `firmware/keyboards/svalboard/svalboard.c` was
-patched to try before its own commands (branch `mal` of the fork
-`micleo2/svalboard-vial-qmk`, the `firmware/` submodule). The board pushes a STATE packet
+`qs-qmk/firmware/` and built by `SRC += host_link.c` plus `RAW_ENABLE = yes`
+in the keymap's rules.mk. The build has no VIA/Vial, so the file owns
+`raw_hid_receive` outright (its non-VIA path). The fork
+`micleo2/svalboard-vial-qmk`, branch `mal`, the `firmware/` submodule, is
+patched so the Svalboard's boot and split-sync code runs without Vial. The board pushes a STATE packet
 whenever layers, rgblight or caps word change and a KEY packet for every
 press and release, but only while the desktop has said HELLO in the last
 five seconds. Backlight brightness is the rgblight value the Svalboard keeps
@@ -60,9 +60,10 @@ once a moment later.
 **Host.** `retro/services/qmk/qmk-bridge.py` finds the board by USB id
 (303a:4044) on its raw HID interface, keeps the HELLO going, and turns
 packets into JSON lines for `services/Qmk.qml`, which mirrors whichever
-board was typed on last. The Svalboard's Vial serial already matches the
-stock vial udev rule, so its hidraw node is accessible without anything
-extra; `qs-qmk/udev/` has a rule for both boards anyway.
+board was typed on last. Without Vial the board no longer carries the Vial
+serial the stock vial udev rule matches, so the rule in `qs-qmk/udev/`
+(matching by USB id, installed as `70-qmk-unicorne.rules`) is what grants
+access to its hidraw node.
 
 ## After changing the keymap
 

@@ -13,7 +13,6 @@
 #include QMK_KEYBOARD_H
 #include <string.h>
 #include "keymap_support.h"   // SV_* keycodes, MH_AUTO_BUTTONS_LAYER
-#include "dynamic_keymap.h"   // vial_tap_dance_entry_t, dynamic_keymap_set_tap_dance
 
 enum layer {
     BASE = 0,
@@ -125,9 +124,8 @@ const uint16_t PROGMEM keymaps[DYNAMIC_KEYMAP_LAYER_COUNT][MATRIX_ROWS][MATRIX_C
     [3 ... 13] = LAYER_TRNS,
 };
 
-// Per-layer LED colours (hue, sat, val), applied at every boot so the C file
-// stays the single source of truth.  Brightness (val) is still controlled by
-// the RGB_VAI/RGB_VAD keys at runtime.
+// Per-layer LED colours (hue, sat, val), applied at every boot.  Brightness
+// (val) is still controlled by the RGB_VAI/RGB_VAD keys at runtime.
 static const struct layer_hsv my_layer_colors[DYNAMIC_KEYMAP_LAYER_COUNT] = {
     [ 0] = { 85, 255, 255},
     [ 1] = { 21, 255, 255},
@@ -147,11 +145,68 @@ static const struct layer_hsv my_layer_colors[DYNAMIC_KEYMAP_LAYER_COUNT] = {
     [15] = {213, 255, 255},
 };
 
-// Vial tap dances, used as TD(n).  {tap, hold, double tap, tap+hold, term ms}.
-// Vial keeps these in EEPROM, so they are written there whenever a new build
-// is flashed (fresh_install), the same moment the keymap itself is reloaded.
-static const vial_tap_dance_entry_t my_tap_dances[] = {
-    [0] = {QK_REPEAT_KEY, KC_LCTL, XXXXXXX, XXXXXXX, 200},
+// ---------------------------------------------------------------------------
+// Tap dances: https://docs.qmk.fm/features/tap_dance
+// Use them in the keymap as TD(name).
+
+// Tap-hold tap dance ("advanced mod-tap": any keycode on tap, another on
+// hold), the pattern from Example 5 of the tap dance docs.
+typedef struct {
+    uint16_t tap;
+    uint16_t hold;
+    uint16_t held;
+} tap_dance_tap_hold_t;
+
+#define ACTION_TAP_DANCE_TAP_HOLD(tap, hold)     { .fn = {NULL, tap_dance_tap_hold_finished, tap_dance_tap_hold_reset}, .user_data = (void *)&((tap_dance_tap_hold_t){tap, hold, 0}), }
+
+static keypos_t td_last_pos;   // where the tap dance key is, for the Repeat key
+
+// register/unregister that also works for the Repeat key, which is not a
+// basic keycode and has to go through QMK's repeat key API.
+static void td_key(uint16_t keycode, bool down) {
+    if (keycode == QK_REPEAT_KEY) {
+        keyevent_t event = MAKE_KEYEVENT(td_last_pos.row, td_last_pos.col, down);
+        repeat_key_invoke(&event);
+    } else if (down) {
+        register_code16(keycode);
+    } else {
+        unregister_code16(keycode);
+    }
+}
+
+void tap_dance_tap_hold_finished(tap_dance_state_t *state, void *user_data) {
+    tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)user_data;
+    if (state->pressed) {
+        if (state->count == 1
+#ifndef PERMISSIVE_HOLD
+            && !state->interrupted
+#endif
+        ) {
+            td_key(tap_hold->hold, true);
+            tap_hold->held = tap_hold->hold;
+        } else {
+            td_key(tap_hold->tap, true);
+            tap_hold->held = tap_hold->tap;
+        }
+    }
+}
+
+void tap_dance_tap_hold_reset(tap_dance_state_t *state, void *user_data) {
+    tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)user_data;
+    if (tap_hold->held) {
+        td_key(tap_hold->held, false);
+        tap_hold->held = 0;
+    }
+}
+
+// Tap Dance declarations
+enum {
+    TD_REPEAT_KEY_LCTL,   // Keybard TD(0): tap QK_REPEAT_KEY, hold KC_LCTL, double-tap XXXXXXX, tap+hold XXXXXXX
+};
+
+// Tap Dance definitions
+tap_dance_action_t tap_dance_actions[] = {
+    [TD_REPEAT_KEY_LCTL] = ACTION_TAP_DANCE_TAP_HOLD(QK_REPEAT_KEY, KC_LCTL),
 };
 
 layer_state_t default_layer_state_set_user(layer_state_t state) {
@@ -164,14 +219,29 @@ layer_state_t layer_state_set_user(layer_state_t state) {
     return state;
 }
 
+bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+    // Tap-hold tap dances: send the tap keycode on release when the key was
+    // tapped and released before the dance finished (Example 5 in the docs).
+    tap_dance_action_t *action;
+    switch (keycode) {
+        case TD(TD_REPEAT_KEY_LCTL):
+            td_last_pos = record->event.key;
+            action = &tap_dance_actions[QK_TAP_DANCE_GET_INDEX(keycode)];
+            if (!record->event.pressed && action->state.count && !action->state.finished) {
+                tap_dance_tap_hold_t *tap_hold = (tap_dance_tap_hold_t *)action->user_data;
+                td_key(tap_hold->tap, true);
+                td_key(tap_hold->tap, false);
+            }
+            break;
+    }
+
+    // Custom keycodes go here.  Define your own starting from SV_SAFE_RANGE,
+    // not SAFE_RANGE, so they don't collide with the Svalboard's.
+    return true;
+}
+
 void keyboard_post_init_user(void) {
     memcpy(global_saved_values.layer_colors, my_layer_colors, sizeof(my_layer_colors));
-
-    if (fresh_install) {
-        for (uint8_t i = 0; i < sizeof(my_tap_dances) / sizeof(my_tap_dances[0]); i++) {
-            dynamic_keymap_set_tap_dance(i, &my_tap_dances[i]);
-        }
-    }
 
     // Uncomment to debug the matrix over the QMK console (qmk console).
     // debug_enable = true;

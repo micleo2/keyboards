@@ -1,27 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 #pragma once
 
-// Same UID as the stock vial keymap so Keybard/Vial still recognise the board
-// if you ever want to look at it (edits made there are discarded on the next
-// flash of a new build).
-#define VIAL_KEYBOARD_UID {0x1B, 0x18, 0x7D, 0xF2, 0x21, 0xF6, 0x29, 0x48}
-
-// Vial security combos, depending on which unit this is...
-#ifdef INIT_EE_HANDS_RIGHT
-// right thumb lock
-#define VIAL_UNLOCK_COMBO_ROWS { 5, 5 }
-#define VIAL_UNLOCK_COMBO_COLS { 0, 1 }
-#elif INIT_EE_HANDS_LEFT
-// left thumb lock
-#define VIAL_UNLOCK_COMBO_ROWS { 0, 0 }
-#define VIAL_UNLOCK_COMBO_COLS { 0, 1 }
-#else
-// both thumb locks
-#define VIAL_UNLOCK_COMBO_ROWS { 0, 0, 5, 5 }
-#define VIAL_UNLOCK_COMBO_COLS { 2, 5, 2, 5 }
-#endif
-#define VIAL_UNLOCK_COUNTER_MAX 12
-
-// Tap-hold tuning.  These are the compiled defaults; Vial's runtime settings
-// start from them after a fresh flash.
+// Tap-hold tuning.  Plain QMK: these are compile-time, see
+// https://docs.qmk.fm/tap_hold for the knobs.
 #define TAPPING_TERM 200
+#define TAPPING_TERM_PER_KEY
+
+// Layer count (16) comes from the keyboard's info.json.

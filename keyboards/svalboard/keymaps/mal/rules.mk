@@ -1,18 +1,21 @@
-# Keep Vial on: the Svalboard's own init code (EEPROM settings, DPI, layer
-# colours, split sync) is only compiled in Vial builds.  Because every build
-# gets a fresh random BUILD_ID, flashing a new build invalidates the keymap
-# stored in EEPROM and the compiled keymap below takes over.
-VIA_ENABLE = yes
-VIAL_ENABLE = yes
-VIAL_INSECURE ?= yes
+# Pure QMK.  No VIA/Vial: the keymap in this directory is the whole truth,
+# nothing is read from EEPROM, and Keybard/Vial cannot talk to the board.
+VIA_ENABLE  = no
+VIAL_ENABLE = no
 
-# Pull in the Svalboard keycode handlers (SV_*, auto mouse layer, scrolling).
-VPATH += keyboards/svalboard/keymaps
+TAP_DANCE_ENABLE = yes    # tap_dance_actions[] in keymap.c
+CAPS_WORD_ENABLE = yes    # keymap_support.c's SV_CAPS_WORD calls caps_word_toggle()
+RAW_ENABLE       = yes    # host_link.c owns raw HID (desktop link)
+# COMBO_ENABLE = yes      # add key_combos[] to keymap.c first
+# KEY_OVERRIDE_ENABLE = yes
+
+# The Svalboard's keycode handlers (SV_*, auto mouse layer, scrolling, DPI).
+VPATH        += keyboards/svalboard/keymaps
 EXTRAINCDIRS += keyboards/svalboard/keymaps
 SRC += keymap_support.c
 
+# Raw HID link to the desktop shell (symlinked from creative-synced/programming/qs-qmk).
+SRC += host_link.c
+
 # Per the Svalboard docs: LTO breaks the build, leave it off.
 LTO_ENABLE = no
-
-# Raw HID link to the desktop shell (host_link.c, from creative-synced/programming/qs-qmk).
-SRC += host_link.c

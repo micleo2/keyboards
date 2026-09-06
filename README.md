@@ -2,7 +2,9 @@
 
 My Svalboard layout as plain QMK C, plus the tooling to build and flash it.
 This repo is a QMK *userspace overlay*: it holds only my keymap, and the
-vendor firmware tree is the `firmware/` submodule.
+vendor firmware tree is the `firmware/` submodule.  No VIA, no Vial: the
+keymap is compiled in, nothing is read from EEPROM, and Keybard/Vial cannot
+talk to the board any more.
 
 ```
 svalboard/
@@ -11,9 +13,9 @@ svalboard/
   pyproject.toml, uv.lock         pins the qmk CLI (Python 3.12) for `uv run qmk`
   keyboards/svalboard/keymaps/mal/
     keymap.c                      THE LAYOUT.  Edit this.
-    config.h                      Vial UID, unlock combo, tapping term
-    rules.mk                      Vial on, pulls in keymap_support.c and host_link.c
-    vial.json                     layout definition Vial/Keybard need
+    config.h                      tapping term and friends
+    rules.mk                      features on/off, pulls in keymap_support.c and host_link.c
+    vial.json                     key geometry only, read by the desktop layout viewer
     host_link.c/.h -> ../../../../../qs-qmk/firmware/   raw HID link to the desktop
   tools/kbi2keymap.py             Keybard .kbi  ->  keymap.c
   tools/flash.sh                  build, wait for the RPI-RP2 drive, copy
@@ -59,7 +61,7 @@ labelled `U` (not `S`).  Then either:
 
 * **From the keyboard:** tap the sys_ctrl layer key (right ring finger, east,
   a one-shot layer) then press left pinky centre.  That is `QK_BOOT` in
-  `keymap.c`, "Reset" in Keybard.  Only the USB-connected half reboots.
+  `keymap.c`.  Only the USB-connected half reboots.
 * **Hardware:** double-tap the `RESET` button on the underside of that half.
 
 Either way an `RPI-RP2` drive appears and the script takes it from there.  A
@@ -71,19 +73,28 @@ master looks up keycodes for both halves and pushes LED state to the other
 side.  So for a quick iteration, flashing just the half you keep plugged in is
 enough; flash both when you change `config.h`/`rules.mk` or update `firmware/`.
 
-Vial/Keybard cannot load firmware, only edit the keymap in EEPROM, so C
-changes always go through a `.uf2` flash.
+## Writing the keymap
 
-## How the C keymap wins over Vial
+Everything is standard QMK, so the [QMK docs](https://docs.qmk.fm) apply
+directly:
 
-Vial stays enabled because the Svalboard's own init code (EEPROM settings,
-DPI, layer colours, split sync) is only compiled in Vial builds.  Every build
-gets a random `BUILD_ID`, and Vial stamps that into EEPROM as the keymap
-validity magic.  Flashing a *new build* therefore invalidates whatever Vial or
-Keybard stored and the compiled `keymaps[]` is loaded instead.  Layer colours
-are copied from `keymap.c` on every boot.  Net effect: `keymap.c` is the
-source of truth; anything changed in Keybard survives only until the next
-flash.
+* Layers are `LAYOUT(...)` blocks in `keymaps[]`; unused layer slots are
+  filled with `LAYER_TRNS`.  Add a name to `enum layer` and shrink the
+  `[3 ... 13]` range when you add one.
+* [Tap dances](https://docs.qmk.fm/features/tap_dance): `enum` +
+  `tap_dance_actions[]`, placed as `TD(name)`.  `keymap.c` carries the docs'
+  tap-hold helper (`ACTION_TAP_DANCE_TAP_HOLD`) for "any keycode on tap,
+  another on hold".
+* Custom keycodes: start your enum at `SV_SAFE_RANGE`, not `SAFE_RANGE`, so
+  they don't collide with the Svalboard's `SV_*` codes, and handle them in
+  `process_record_user`.
+* Combos, key overrides and the like: turn the feature on in `rules.mk` and
+  define the table in `keymap.c`.
+* Svalboard specifics (DPI keys, scroll toggles, auto mouse layer, `SV_*`):
+  `firmware/keyboards/svalboard/keymaps/keymap_support.c` and
+  `firmware/keyboards/svalboard/docs/custom_firmware.md`.  Trackball scroll
+  and DPI settings still live in the Svalboard's own EEPROM block and survive
+  flashes; layer colours come from `keymap.c` at every boot.
 
 ## Re-importing from Keybard
 
@@ -92,15 +103,16 @@ cp ~/Downloads/whatever.kbi layouts/keybard/
 make import KBI=layouts/keybard/whatever.kbi     # overwrites keymap.c
 ```
 
-The converter handles keycodes, layer colours and Vial tap dances (seeded
-into EEPROM on a fresh flash), and refuses to run if the export contains
+The converter handles keycodes, layer colours and tap dances (emitted as
+standard QMK `tap_dance_actions`), and refuses to run if the export contains
 macros, combos or key overrides, so those are never silently dropped.
 
 ## The firmware submodule
 
 `firmware/` is my fork of [svalboard/vial-qmk](https://github.com/svalboard/vial-qmk)
-on branch `mal`: upstream's `vial` branch plus one patch, a
-`raw_hid_receive_user()` hook in `svalboard.c` that `host_link.c` needs.
+on branch `mal`: upstream's `vial` branch plus two small patches to
+`svalboard.c`: the board's init/split-sync code runs without Vial, and a
+`raw_hid_receive_user()` hook for Vial builds.
 Remotes inside it: `origin` = the fork, `upstream` = Svalboard.
 
 ```sh
