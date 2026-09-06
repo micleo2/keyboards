@@ -1,9 +1,0 @@
-# QMK boards: let the logged-in user talk to their raw HID interface, for
-# quickshell/retro/services/qmk/qmk-bridge.py.  One line per board, matching
-# host/boards/*.json.  Installed by setup.sh.
-# Boardsource unicorne
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="4273", ATTRS{idProduct}=="7563", TAG+="uaccess"
-# Boardsource lulu
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="4273", ATTRS{idProduct}=="7685", TAG+="uaccess"
-# Svalboard (lightly)
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4044", TAG+="uaccess"
