@@ -56,10 +56,10 @@ once a moment after the last change.  Packets are 32 bytes, command ids in
 the comment at the top of `host_link.c`.
 
 **Host.** `qmk-bridge.py` finds the boards by USB id (its `BOARDS` table
-matches `host/boards/*.json` and `host/udev/70-qmk.rules`) on their raw
+matches `host/boards/*.json` and `host/udev/70-*-bridge.rules`) on their raw
 HID interface, keeps the HELLO going, and turns packets into JSON lines for
 `Qmk.qml`, which mirrors whichever board was typed on last.  Access to the
-hidraw nodes comes from the udev rule, installed by `setup.sh`.
+hidraw nodes comes from the udev rules, installed by `setup.sh`.
 
 ## After changing a keymap
 

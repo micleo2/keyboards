@@ -23,7 +23,7 @@ users/micleo2/          shared by every board (QMK auto-includes users/<keymap n
 host/                   the computer side of that link (host_link.c is the board side)
   keymap-export.py        keymap.c -> $XDG_STATE_HOME/quickshell/retro/keymap/<board>.json (viewer data)
   boards/<board>.json     per-board export config: firmware tree, keyboard, geometry, USB ids, legends
-  udev/70-qmk.rules       hidraw access for the boards (installed by setup.sh)
+  udev/70-<board>-bridge.rules   hidraw access for each board (installed by setup.sh)
 docs/host-link.md       how the boards talk to the quickshell desktop
 tools/kbi2keymap.py     Keybard .kbi export -> Svalboard keymap.c
 tools/flash.sh          build, wait for the RPI-RP2 drive, copy the .uf2

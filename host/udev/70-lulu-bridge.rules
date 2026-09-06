@@ -1,0 +1,6 @@
+# Boardsource lulu: let the logged-in user open its raw HID interface, so the
+# quickshell bridge (retro/services/qmk/qmk-bridge.py) can talk to it.
+# USB ids match host/boards/lulu.json.  Installed by setup.sh.
+# The "70-" keeps this file ahead of 73-seat-late.rules, which is what turns
+# the uaccess tag into an ACL for the active seat's user.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="4273", ATTRS{idProduct}=="7685", TAG+="uaccess"
