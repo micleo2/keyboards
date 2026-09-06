@@ -8,7 +8,7 @@ if [ -z "${NO_SUDO:-}" ]; then
   sudo pacman -S --needed git uv arm-none-eabi-gcc arm-none-eabi-newlib udisks2 python-hid
 fi
 
-# firmware trees (svalboard fork on branch mal, rover fork of qmk_firmware)
+# firmware trees (svalboard fork on branch mal, upstream qmk_firmware pinned)
 git submodule update --init --recursive --depth 1
 
 # the qmk CLI, pinned (the Svalboard tree's Python helpers need 3.12).  No

@@ -24,3 +24,42 @@
 *******************************************************************************/
 
 #pragma once
+
+/* Settings that used to live in the keyboard-level config.h of the rover fork.
+ * Keymap config.h is included after the keyboard's, so #undef/#define wins. */
+
+#undef STARTUP_SONG
+#define STARTUP_SONG SONG(STARTUP_SOUND)
+
+// Joystick lives on the right half; upstream inverts both axes, we rotate instead.
+#undef POINTING_DEVICE_INVERT_X
+#undef POINTING_DEVICE_INVERT_Y
+// #define MASTER_RIGHT
+#ifndef MASTER_RIGHT
+#    define SPLIT_POINTING_ENABLE
+#    define POINTING_DEVICE_ROTATION_90
+#    define POINTING_DEVICE_RIGHT
+#else
+#    define POINTING_DEVICE_ROTATION_90
+#endif
+#define ANALOG_JOYSTICK_SPEED_REGULATOR 5
+
+#define OLED_BRIGHTNESS 128
+
+// Only the breathing animation, and make it the default (keyboard.json enables six).
+#undef ENABLE_RGB_MATRIX_ALPHAS_MODS
+#undef ENABLE_RGB_MATRIX_BAND_SAT
+#undef ENABLE_RGB_MATRIX_BAND_VAL
+#undef ENABLE_RGB_MATRIX_GRADIENT_LEFT_RIGHT
+#undef ENABLE_RGB_MATRIX_GRADIENT_UP_DOWN
+#undef RGB_MATRIX_DEFAULT_MODE
+#define RGB_MATRIX_DEFAULT_MODE RGB_MATRIX_BREATHING
+
+// tap-hold logic
+#define TAPPING_TERM 170
+#define PERMISSIVE_HOLD
+#define PERMISSIVE_HOLD_PER_KEY
+#define TAPPING_TERM_PER_KEY
+#define HOLD_ON_OTHER_KEY_PRESS_PER_KEY
+
+#define FORCE_NKRO

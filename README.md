@@ -7,7 +7,7 @@ out as submodules.  Plain QMK everywhere, no VIA/Vial.
 | board | keymap | firmware tree | build | flash |
 |---|---|---|---|---|
 | Svalboard (both halves pmw3389 trackballs) | `keyboards/svalboard/keymaps/micleo2/` | `firmware/svalboard` (fork of svalboard/vial-qmk, branch `mal`) | `make svalboard-left svalboard-right` | `make flash-svalboard-left` / `-right` |
-| Boardsource unicorne | `keyboards/boardsource/unicorne/keymaps/micleo2/` | `firmware/qmk` (fork `micleo2/rover` of qmk_firmware) | `make unicorne` | `make flash-unicorne` |
+| Boardsource unicorne | `keyboards/boardsource/unicorne/keymaps/micleo2/` | `firmware/qmk` (upstream qmk_firmware) | `make unicorne` | `make flash-unicorne` |
 | Boardsource lulu (rp2040) | `keyboards/boardsource/lulu/keymaps/micleo2/` | `firmware/qmk` | `make lulu` | `make flash-lulu` |
 
 ```
@@ -99,23 +99,37 @@ Keybard's key layout in Vial's KLE format, kept only for the viewer.
 
 ## Firmware trees
 
-Both are forks so they can carry patches; inside each, `origin` is the fork
-and `upstream` the original.
+* `firmware/qmk`: pristine [qmk/qmk_firmware](https://github.com/qmk/qmk_firmware)
+  `master`, pinned at a commit.  Everything the boardsource boards need is in
+  their keymaps' `config.h`/`rules.mk` (a keymap `config.h` is included after
+  the keyboard's and the generated `info_config.h`, so `#undef` + `#define`
+  overrides anything).  `make update-qmk` moves the pin to current master.
+* `firmware/svalboard`: fork of [svalboard/vial-qmk](https://github.com/svalboard/vial-qmk),
+  branch `mal` = upstream `vial` + two small patches to `svalboard.c` (the
+  board's init/split-sync code runs without Vial; a `raw_hid_receive_user`
+  hook for Vial builds).  Inside it `origin` is the fork, `upstream` the original.
 
-* `firmware/svalboard`: [svalboard/vial-qmk](https://github.com/svalboard/vial-qmk)
-  `vial` + two small patches to `svalboard.c` (the board's init/split-sync
-  code runs without Vial; a `raw_hid_receive_user` hook for Vial builds).
-* `firmware/qmk`: [qmk/qmk_firmware](https://github.com/qmk/qmk_firmware)
-  `master` + keyboard-level tweaks for the boardsource boards
-  (`keyboards/boardsource/{unicorne,lulu}/config.h|rules.mk|info.json`).
+### Working on the Svalboard fork
+
+Edit directly in `firmware/svalboard`; it is a normal clone on branch `mal`.
+The one rule of submodules: the parent repo records a commit hash, so after
+committing inside the submodule, push it *and* commit the new pointer here,
+otherwise a fresh clone checks out the old commit.
+
+```sh
+cd firmware/svalboard
+git commit -am "svalboard: ..." && git push origin mal
+cd ../.. && git add firmware/svalboard && git commit -m "firmware/svalboard: <what changed>"
+```
+
+`setup.sh` clones the submodules shallow (`--depth 1`); before rebasing on
+upstream from a fresh machine run `git -C firmware/svalboard fetch --unshallow upstream`.
 
 ```sh
 make update-svalboard          # fetch upstream, rebase mal, sync submodules
 git -C firmware/svalboard push --force-with-lease origin mal
 git add firmware/svalboard && git commit -m "firmware/svalboard: rebase on upstream"
 ```
-
-(`make update-qmk` likewise for `firmware/qmk`.)
 
 ## Fresh machine
 

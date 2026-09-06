@@ -7,7 +7,8 @@
 #   make flash-unicorne / flash-lulu
 #   make export                       regenerate the desktop viewer's keymap JSON
 #   make import KBI=layouts/keybard/x.kbi   Keybard export -> svalboard keymap.c
-#   make update-svalboard / update-qmk      rebase the firmware forks on upstream
+#   make update-svalboard             rebase the Svalboard fork on upstream
+#   make update-qmk                   move firmware/qmk to current upstream master
 #   make setup                        fresh machine (see setup.sh)
 
 QMK     := uv run qmk
@@ -63,10 +64,10 @@ update-svalboard:
 	git -C firmware/svalboard submodule update --init --recursive
 	@echo "then: git -C firmware/svalboard push --force-with-lease origin mal && git add firmware/svalboard && git commit"
 update-qmk:
-	git -C firmware/qmk fetch upstream
-	git -C firmware/qmk rebase upstream/master
+	git -C firmware/qmk fetch origin master
+	git -C firmware/qmk checkout --detach origin/master
 	git -C firmware/qmk submodule update --init --recursive
-	@echo "then: git -C firmware/qmk push --force-with-lease origin master && git add firmware/qmk && git commit"
+	@echo "then: make unicorne lulu && git add firmware/qmk && git commit -m 'firmware/qmk: bump to upstream'"
 
 setup:
 	./setup.sh

@@ -4,4 +4,4 @@
 	branch = mal
 [submodule "firmware/qmk"]
 	path = firmware/qmk
-	url = git@github.com:micleo2/rover.git
+	url = https://github.com/qmk/qmk_firmware.git
