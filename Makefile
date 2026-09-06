@@ -6,7 +6,7 @@
 #   make flash-svalboard-right        build, then wait for the board in bootloader and copy
 #   make flash-unicorne / flash-lulu
 #   make export                       regenerate the desktop viewer's keymap JSON
-#   make import KBI=layouts/keybard/x.kbi   Keybard export -> svalboard keymap.c
+#   make import KBI=keybard-exports/x.kbi   Keybard export -> svalboard keymap.c
 #   make update-svalboard             rebase the Svalboard fork on upstream
 #   make update-qmk                   move firmware/qmk to current upstream master
 #   make setup                        fresh machine (see setup.sh)
@@ -26,7 +26,7 @@ SVAL_RIGHT := svalboard/$(if $(POINTER),$(POINTER)/,)right
 UNICORNE   := boardsource/unicorne
 LULU       := boardsource/lulu/rp2040
 
-KBI ?= layouts/keybard/mouse_on_base.kbi
+KBI ?= keybard-exports/mouse_on_base.kbi
 
 .PHONY: all svalboard-left svalboard-right unicorne lulu \
         flash-svalboard-left flash-svalboard-right flash-unicorne flash-lulu \

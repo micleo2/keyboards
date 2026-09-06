@@ -27,7 +27,7 @@ host/                   the computer side of that link (host_link.c is the board
 docs/host-link.md       how the boards talk to the quickshell desktop
 tools/kbi2keymap.py     Keybard .kbi export -> Svalboard keymap.c
 tools/flash.sh          build, wait for the RPI-RP2 drive, copy the .uf2
-layouts/keybard/        archived Keybard exports
+keybard-exports/        old Keybard .kbi exports, input to `make import`
 firmware/svalboard      submodule
 firmware/qmk            submodule
 ```
@@ -95,8 +95,8 @@ Everything is standard QMK, so the [QMK docs](https://docs.qmk.fm) apply:
 ### Importing a Keybard export (Svalboard)
 
 ```sh
-cp ~/Downloads/whatever.kbi layouts/keybard/
-make import KBI=layouts/keybard/whatever.kbi     # overwrites keymap.c
+cp ~/Downloads/whatever.kbi keybard-exports/
+make import KBI=keybard-exports/whatever.kbi     # overwrites keymap.c
 ```
 
 Keycodes, layer colours and tap dances (as `tap_dance_actions`) are

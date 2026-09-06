@@ -2,7 +2,7 @@
 """Convert a Keybard .kbi export into a QMK keymap.c for the Svalboard.
 
 Usage:
-    tools/kbi2keymap.py layouts-kbi/mouse_on_base.kbi > keyboards/svalboard/keymaps/mal/keymap.c
+    tools/kbi2keymap.py keybard-exports/mouse_on_base.kbi > keyboards/svalboard/keymaps/micleo2/keymap.c
 
 The generated file is meant to be edited by hand afterwards; re-run this only
 if you want to re-import a fresh Keybard export (it overwrites everything).
