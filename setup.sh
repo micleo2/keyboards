@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 if [ -z "${NO_SUDO:-}" ]; then
-  sudo pacman -S --needed git uv arm-none-eabi-gcc arm-none-eabi-newlib udisks2 python-hid
+  sudo pacman -S --needed git make python uv arm-none-eabi-gcc arm-none-eabi-newlib udisks2 python-hid
 fi
 
 # firmware trees (svalboard fork on branch mal, upstream qmk_firmware pinned)
