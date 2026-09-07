@@ -37,13 +37,15 @@ nodes) lives in the quickshell config in `~/dotfiles`; the only contract
 between the two is the HID protocol in `users/micleo2/host_link.c` and the
 JSON files `make export` writes.
 
-**Raw HID access.**  The bridge opens each board's hidraw node, which is
-root-only by default.  `host/udev/70-<board>-bridge.rules` tags the node
-`uaccess` by USB vendor/product id, and logind then grants the active seat's
-user access.  The `70-` prefix matters: the system rule that acts on the tag is
-`73-seat-late.rules`, and udev runs rule files in name order.  Only the bridge
-needs this; building and flashing do not.  `setup.sh` installs the rules and
-reloads udev.
+**Raw HID access.**  Each board shows up as several hidraw nodes (keyboard,
+mouse, raw HID); the bridge needs the raw one, which is root-only by default.
+`host/udev/70-<board>-bridge.rules` picks it out by USB vendor/product id and
+interface number (QMK always puts raw HID on interface 1), names it
+`/dev/<board>-bridge`, and tags it `uaccess`, which makes logind grant the
+active seat's user access.  The `70-` prefix matters: the system rule that
+acts on the tag is `73-seat-late.rules`, and udev runs rule files in name
+order.  Only the bridge needs this; building and flashing do not.  `setup.sh`
+installs the rules and reloads udev.  Check with `ls -l /dev/*-bridge`.
 
 ## Daily use
 

@@ -59,7 +59,8 @@ the comment at the top of `host_link.c`.
 matches `host/boards/*.json` and `host/udev/70-*-bridge.rules`) on their raw
 HID interface, keeps the HELLO going, and turns packets into JSON lines for
 `Qmk.qml`, which mirrors whichever board was typed on last.  Access to the
-hidraw nodes comes from the udev rules, installed by `setup.sh`.
+hidraw nodes comes from the udev rules, installed by `setup.sh`; they also
+name each board's raw interface `/dev/<board>-bridge` for humans.
 
 ## After changing a keymap
 

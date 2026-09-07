@@ -1,6 +1,13 @@
-# Svalboard (lightly): let the logged-in user open its raw HID interface, so the
-# quickshell bridge (retro/services/qmk/qmk-bridge.py) can talk to it.
-# USB ids match host/boards/svalboard.json.  Installed by setup.sh.
-# The "70-" keeps this file ahead of 73-seat-late.rules, which is what turns
-# the uaccess tag into an ACL for the active seat's user.
-SUBSYSTEM=="hidraw", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4044", TAG+="uaccess"
+# Svalboard (lightly): its raw HID interface becomes /dev/svalboard-bridge, and the
+# logged-in user may open it, so the quickshell bridge
+# (retro/services/qmk/qmk-bridge.py) can talk to the board.
+#
+# USB ids match host/boards/svalboard.json.  QMK always puts raw HID on USB
+# interface 1 (tmk_core/protocol/usb_descriptor.h); the board's other hidraw
+# nodes (keyboard, mouse, console) are left alone.  ENV{ID_*} rather than
+# ATTRS{} because the vendor/product ids and the interface number live on
+# different parent devices, and ATTRS keys must all match the same one; the
+# ENV values are imported by 60-persistent-hidraw.rules.  The "70-" keeps this
+# file ahead of 73-seat-late.rules, which turns the uaccess tag into an ACL.
+# Installed by setup.sh.
+SUBSYSTEM=="hidraw", ENV{ID_VENDOR_ID}=="303a", ENV{ID_MODEL_ID}=="4044", ENV{ID_USB_INTERFACE_NUM}=="01", TAG+="uaccess", SYMLINK+="svalboard-bridge"
