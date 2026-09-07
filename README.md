@@ -26,8 +26,9 @@ host/                   the computer side of that link (host_link.c is the board
   udev/70-<board>-bridge.rules   hidraw access for each board (installed by setup.sh)
 docs/host-link.md       how the boards talk to the quickshell desktop
 tools/kbi2keymap.py     Keybard .kbi export -> Svalboard keymap.c
-tools/flash.sh          build, wait for the RPI-RP2 drive, copy the .uf2
+tools/flash.sh          wait for the RPI-RP2 drive, copy a built .uf2 onto it
 keybard-exports/        old Keybard .kbi exports, input to `make import`
+build/                  built firmware, one .uf2 per board (gitignored, `make clean`)
 firmware/svalboard      submodule
 firmware/qmk            submodule
 ```
@@ -53,11 +54,12 @@ installs the rules and reloads udev.  Check with `ls -l /dev/*-bridge`.
 make flash-svalboard-right     # build, wait for the half in bootloader, copy the .uf2
 make flash-unicorne            # same for the unicorne (make flash-lulu for the lulu)
 make export                    # refresh what the desktop viewer draws
-make                           # build every board -> *.uf2 here
+make                           # build every board -> build/*.uf2
 ```
 
-`tools/flash.sh` builds first, then waits for the `RPI-RP2` drive, mounts it
-with udisks (no desktop automount needed), copies the firmware, and unmounts.
+`make flash-*` builds first, then `tools/flash.sh` waits for the `RPI-RP2`
+drive, mounts it with udisks (no desktop automount needed), copies the
+firmware, and unmounts.
 
 **Bootloader mode.**  Svalboard: the half to flash must be the one plugged
 in, through its port labelled `U`.  Tap the sys_ctrl layer key (right ring

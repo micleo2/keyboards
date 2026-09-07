@@ -1,7 +1,7 @@
 # All boards build through the qmk CLI pinned by pyproject.toml (`uv run qmk`),
 # against the firmware tree each board needs (QMK_HOME per target).
 #
-#   make                              build everything
+#   make                              build everything -> build/*.uf2
 #   make svalboard-left               one target (also: svalboard-right, unicorne, lulu)
 #   make flash-svalboard-right        build, then wait for the board in bootloader and copy
 #   make flash-unicorne / flash-lulu
@@ -28,6 +28,17 @@ LULU       := boardsource/lulu/rp2040
 
 KBI ?= keybard-exports/mouse_on_base.kbi
 
+# qmk copies the finished firmware into the userspace root (here); collect the
+# .uf2 files under build/ instead of leaving them loose in the repo.
+BUILD := $(CURDIR)/build
+uf2    = $(BUILD)/$(subst /,_,$(1))_$(KEYMAP).uf2
+
+# $(call compile,<QMK_HOME>,<keyboard>)
+define compile
+	QMK_HOME=$(1) $(QMK) compile -kb $(2) -km $(KEYMAP) -j$$(nproc)
+	@mkdir -p $(BUILD) && mv -f $(subst /,_,$(2))_$(KEYMAP).uf2 $(call uf2,$(2))
+endef
+
 .PHONY: all svalboard-left svalboard-right unicorne lulu \
         flash-svalboard-left flash-svalboard-right flash-unicorne flash-lulu \
         export import update-svalboard update-qmk setup clean
@@ -35,22 +46,22 @@ KBI ?= keybard-exports/mouse_on_base.kbi
 all: svalboard-left svalboard-right unicorne lulu
 
 svalboard-left:
-	QMK_HOME=$(SVAL_FW) $(QMK) compile -kb $(SVAL_LEFT) -km $(KEYMAP) -j$$(nproc)
+	$(call compile,$(SVAL_FW),$(SVAL_LEFT))
 svalboard-right:
-	QMK_HOME=$(SVAL_FW) $(QMK) compile -kb $(SVAL_RIGHT) -km $(KEYMAP) -j$$(nproc)
+	$(call compile,$(SVAL_FW),$(SVAL_RIGHT))
 unicorne:
-	QMK_HOME=$(QMK_FW) $(QMK) compile -kb $(UNICORNE) -km $(KEYMAP) -j$$(nproc)
+	$(call compile,$(QMK_FW),$(UNICORNE))
 lulu:
-	QMK_HOME=$(QMK_FW) $(QMK) compile -kb $(LULU) -km $(KEYMAP) -j$$(nproc)
+	$(call compile,$(QMK_FW),$(LULU))
 
-flash-svalboard-left:
-	QMK_HOME=$(SVAL_FW) tools/flash.sh $(SVAL_LEFT)
-flash-svalboard-right:
-	QMK_HOME=$(SVAL_FW) tools/flash.sh $(SVAL_RIGHT)
-flash-unicorne:
-	QMK_HOME=$(QMK_FW) tools/flash.sh $(UNICORNE)
-flash-lulu:
-	QMK_HOME=$(QMK_FW) tools/flash.sh $(LULU)
+flash-svalboard-left: svalboard-left
+	tools/flash.sh $(call uf2,$(SVAL_LEFT))
+flash-svalboard-right: svalboard-right
+	tools/flash.sh $(call uf2,$(SVAL_RIGHT))
+flash-unicorne: unicorne
+	tools/flash.sh $(call uf2,$(UNICORNE))
+flash-lulu: lulu
+	tools/flash.sh $(call uf2,$(LULU))
 
 export:
 	host/keymap-export.py
@@ -73,6 +84,6 @@ setup:
 	./setup.sh
 
 clean:
-	rm -f *.uf2
+	rm -rf $(BUILD)
 	QMK_HOME=$(SVAL_FW) $(QMK) clean
 	QMK_HOME=$(QMK_FW) $(QMK) clean
