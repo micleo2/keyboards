@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Fresh machine: everything needed to build, flash and feed the desktop viewer.
 # Re-runnable.  NO_SUDO=1 skips the pacman and udev steps.
-set -euo pipefail
+set -euxo pipefail
 cd "$(dirname "$0")"
 
 if [ -z "${NO_SUDO:-}" ]; then

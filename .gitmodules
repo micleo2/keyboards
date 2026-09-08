@@ -1,4 +1,4 @@
-[submodule "firmware"]
+[submodule "firmware/svalboard"]
 	path = firmware/svalboard
 	url = https://github.com/micleo2/svalboard-vial-qmk.git
 	branch = mal
