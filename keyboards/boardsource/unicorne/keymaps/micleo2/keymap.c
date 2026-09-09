@@ -470,6 +470,15 @@ void get_kc_layer_change(uint16_t kc, uint8_t *layer_out) {
     }
 }
 
+// The per-layer colours are full strength; dim them by the configured
+// brightness so the host link's slider (and RGB_VAI/VAD) still has an effect.
+// The indicators run after the effect and overwrite it, so without this the
+// brightness setting would never reach the LEDs.
+static void set_key_color(uint8_t index, uint8_t r, uint8_t g, uint8_t b) {
+    uint16_t v = rgb_matrix_config.hsv.v;
+    rgb_matrix_set_color(index, r * v / RGB_MATRIX_MAXIMUM_BRIGHTNESS, g * v / RGB_MATRIX_MAXIMUM_BRIGHTNESS, b * v / RGB_MATRIX_MAXIMUM_BRIGHTNESS);
+}
+
 bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
     for (uint8_t row = 0; row < MATRIX_ROWS; ++row) {
         for (uint8_t col = 0; col < MATRIX_COLS; ++col) {
@@ -485,13 +494,13 @@ bool rgb_matrix_indicators_advanced_user(uint8_t led_min, uint8_t led_max) {
             }
             // This should only happen if the base layer for some reason has transparent keys.
             if (kc == KC_TRNS) {
-                rgb_matrix_set_color(index, BASE_COL);
+                set_key_color(index, BASE_COL);
                 continue;
             }
             uint8_t layer_for_color = layer_for_key;
             get_kc_layer_change(kc, &layer_for_color);
             uint8_t *layer_colors = layer_color_map[layer_for_color];
-            rgb_matrix_set_color(index, layer_colors[0], layer_colors[1], layer_colors[2]);
+            set_key_color(index, layer_colors[0], layer_colors[1], layer_colors[2]);
         }
     }
     return false;
